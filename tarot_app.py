@@ -39,7 +39,7 @@ st.markdown("""
         background: linear-gradient(135deg, #0a0716 0%, #251545 50%, #080a18 100%) !important;
     }
     
-    /* 2. 關鍵透明化：強迫 Streamlit 所有上層包裝盒、主區塊、欄位容器全面變透明，把底層漸層完美透上來 */
+    /* 2. 關鍵透明化：強迫 Streamlit 所有上層包裝盒全面變透明，把底層漸層完美透上來 */
     .stApp, section.main, div[data-testid="stHeader"], div[data-testid="stBlockContainer"], div[data-testid="stVerticalBlock"] {
         background: transparent !important;
         background-color: transparent !important;
@@ -100,7 +100,7 @@ if st.button("🔮 連結宇宙能量..."):
     else:
         st.warning("⚠️ 請先填寫「名字」與「占卜問題」，宇宙才能幫你感應牌陣喔！")
 
-# ================= 💥 核心核心：卡牌本人直接點選＋扇形重疊盲選邏輯 =================
+# ================= 💥 核心核心：卡牌本人直接點選＋💥行動端跨平台 RWD 修正💥 =================
 if st.session_state.is_setup and st.session_state.drawn_results is None:
     st.write("---")
     st.markdown("### 🃏 **請憑直覺從牌組中點選三張牌**")
@@ -109,6 +109,7 @@ if st.session_state.is_setup and st.session_state.drawn_results is None:
     if cards_left > 0:
         st.info(f"✨ 專注於你的問題... 目前已選擇 {len(st.session_state.chosen_indices)} 張，還需要點選 {cards_left} 張")
     
+    # 使用絕對路徑定位牌背圖片
     img_dir = os.path.join(os.path.dirname(__file__), "images")
     card_back_path = os.path.join(img_dir, "card_back.png")
     if not os.path.exists(card_back_path):
@@ -119,14 +120,50 @@ if st.session_state.is_setup and st.session_state.drawn_results is None:
         with open(card_back_path, "rb") as img_file:
             card_back_b64 = base64.b64encode(img_file.read()).decode()
         
+    # ==================== 🪄 CSS 智慧型響應式（RWD）雙模牌陣 ====================
     st.markdown(f"""
         <style>
-        div[data-testid="stHorizontalBlock"]:has(button) {{ gap: 0px !important; }}
-        div[data-testid="stHorizontalBlock"]:has(button) div[data-testid="stColumn"] {{
-            margin-right: -28px !important;   
-            transition: transform 0.25s ease-in-out, z-index 0.2s;
-            position: relative;
+        /* 1. 全域卡牌容器：強迫不論桌機或手機都維持單排水平 flex 佈局，不允許換行或崩潰垂直堆疊 */
+        div[data-testid="stHorizontalBlock"]:has(button) {{
+            gap: 0px !important;
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important; /* 關鍵：當手機寬度不夠時，自動變成優雅的左右水平滑動軌道！ */
+            padding-bottom: 25px !important; /* 留出空間給 Hover 漂浮動畫 */
         }}
+        
+        /* 隱藏手機上生硬的滾動條，保持視覺純淨 */
+        div[data-testid="stHorizontalBlock"]:has(button)::-webkit-scrollbar {{
+            display: none !important;
+        }}
+        
+        /* 2. 📱 手機/行動裝置特殊樣式最佳化 (螢幕寬度 768px 以下) */
+        @media (max-width: 768px) {{
+            div[data-testid="stHorizontalBlock"]:has(button) div[data-testid="stColumn"] {{
+                margin-right: -36px !important;   /* 手機上卡牌重疊得更緊密 */
+                flex: 0 0 55px !important;       /* 🔥 核心：強制鎖定每張卡牌基底寬度為 55px，阻斷縮小變形 */
+                min-width: 55px !important;
+                position: relative;
+            }}
+            div[data-testid="stHorizontalBlock"]:has(button) div[data-testid="stColumn"] div.stButton > button {{
+                height: 110px !important;        /* 手機上微調高度，視覺比例最精緻 */
+            }}
+        }}
+        
+        /* 3. 💻 桌機大螢幕樣式最佳化 (螢幕寬度 769px 以上) */
+        @media (min-width: 769px) {{
+            div[data-testid="stHorizontalBlock"]:has(button) div[data-testid="stColumn"] {{
+                margin-right: -28px !important;   /* 桌機標準寬度交疊 */
+                flex: 1 1 0% !important;
+                position: relative;
+            }}
+            div[data-testid="stHorizontalBlock"]:has(button) div[data-testid="stColumn"] div.stButton > button {{
+                height: 140px !important;        /* 桌機標準氣派高度 */
+            }}
+        }}
+        
+        /* 4. 公用基礎卡牌外觀設定 */
         div[data-testid="stHorizontalBlock"]:has(button) div[data-testid="stColumn"] div.stButton > button {{
             background: none !important;
             background-image: url(data:image/png;base64,{card_back_b64}) !important;
@@ -135,13 +172,15 @@ if st.session_state.is_setup and st.session_state.drawn_results is None:
             background-position: center !important;
             background-color: #2D2D44 !important; 
             border: 1px solid rgba(255, 215, 0, 0.3) !important; 
-            height: 140px !important;  
             width: 100% !important;
             padding: 0 !important;
             box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.5) !important; 
             border-radius: 6px !important;
             transform: none !important;
+            transition: all 0.2s;
         }}
+        
+        /* 5. 懸停上浮與選中暗化遮罩 */
         div[data-testid="stHorizontalBlock"]:has(button) div[data-testid="stColumn"]:hover {{
             transform: translateY(-25px) !important;     
             z-index: 9999 !important;          
@@ -151,7 +190,7 @@ if st.session_state.is_setup and st.session_state.drawn_results is None:
         }}
         div[data-testid="stHorizontalBlock"]:has(button) div[data-testid="stColumn"] div.stButton > button:disabled p {{
             color: #00FF00 !important;
-            font-size: 26px !important;
+            font-size: 24px !important;
             font-weight: bold !important;
             background-color: rgba(0, 0, 0, 0.5) !important; 
             width: 100% !important;
@@ -164,6 +203,7 @@ if st.session_state.is_setup and st.session_state.drawn_results is None:
         }}
         </style>
     """, unsafe_allow_html=True)
+    # =====================================================================
         
     cols_count = 26
     cols = st.columns(cols_count)
@@ -203,6 +243,7 @@ if st.session_state.drawn_results:
     st.subheader("✨ 你的占卜結果")
     st.success(f"🔮 針對問題「{res['question']}」，你的【{current_style}】分析如下：")
     
+    # 在手機上，結果卡牌也會自動優化為直式併排，符合 RWD 規範
     col_res1, col_res2, col_res3 = st.columns(3)
     cols_res = [col_res1, col_res2, col_res3]
     
@@ -258,12 +299,12 @@ if st.session_state.drawn_results:
     if not st.session_state.drawn_results["ai_analysis"]:
         with st.spinner(f"✨ 正在由【{current_style}】為你深度解讀..."):
             try:
+                # 核心資安修正：從 Streamlit 雲端後台安全讀取金鑰，不把 Key 寫死在代碼中
                 try:
                     MY_API_KEY = st.secrets["GEMINI_API_KEY"]
                 except:
                     # 萬一本地測試沒設定，就先留空或用原本的
-                    MY_API_KEY = "AIzaSyBcuq0X1Cx-v6_l_NWvO9nGeSwJqIcVKjs" 
-                    
+                    MY_API_KEY = "AIzaSyBcuq0X1Cx-v6_l_NWvO9nGeSwJqIcVKjs"
                 client = genai.Client(api_key=MY_API_KEY)
                 
                 prompt = f"""
@@ -278,7 +319,7 @@ if st.session_state.drawn_results:
                 1. 溫柔心靈導師：充滿同理心、語氣溫暖、給予心靈上的療癒與支持、側重情緒疏導。
                 2. 理性邏輯分析師：語氣冷靜、層次分明、著重於因果關係與客觀Facts分析、側重決策路徑。
                 3. 古典塔羅解讀師：语氣帶有神祕與文學感、使用傳統象徵、古典詮釋學、側重命運原型與歷史寓意。
-                4. 客觀專業占占卜師：語氣中立且專業、實事求是、側重於卡牌表面訊息的直白轉譯、不帶過多個人論斷。
+                4. 客觀專業占卜師：語氣中立且專業、實事求是、側重於卡牌表面訊息的直白轉譯、不帶過多個人論斷。
                 
                 注意：請準確傳達牌意，維持知性且專業的口吻，絕對不要有機器感。
                 """
@@ -291,7 +332,6 @@ if st.session_state.drawn_results:
                 
             except Exception as e:
                 st.error(f"呼叫 API 時發生錯誤：{e}")
-                # 💥 已修正：將原本錯誤的 turb_results 修正為正確的 drawn_results
                 st.session_state.drawn_results["ai_analysis"] = "哎呀，宇宙訊號有點干擾，請稍後再試！"
 
     st.write(st.session_state.drawn_results["ai_analysis"])
@@ -306,20 +346,23 @@ if st.session_state.drawn_results:
     my_app_url = "https://tarotap.com" 
     encoded_url = urllib.parse.quote(my_app_url)
     
+    # 按鈕在手機上會自動彈性縮放，不會破版
     share_col1, share_col2, share_col3 = st.columns(3)
     
     with share_col1:
         line_url = f"https://line.me/R/share?text={encoded_text}%20{encoded_url}"
-        st.markdown(f'<a href="{line_url}" target="_blank"><button style="width:100%; background-color:#06C755; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0px 4px 10px rgba(6,199,85,0.3);">🟢 分享到 LINE 聊天室</button></a>', unsafe_allow_html=True)
+        st.markdown(f'<a href="{line_url}" target="_blank"><button style="width:100%; background-color:#06C755; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0px 4px 10px rgba(6,199,85,0.3);">🟢 分享到 LINE</button></a>', unsafe_allow_html=True)
         
     with share_col2:
         threads_url = f"https://threads.net/intent/post?text={encoded_text}"
-        st.markdown(f'<a href="{threads_url}" target="_blank"><button style="width:100%; background-color:#000000; color:white; border:1px solid #333; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0px 4px 10px rgba(255,255,255,0.1);">🖤 一鍵發布到 Threads</button></a>', unsafe_allow_html=True)
+        st.markdown(f'<a href="{threads_url}" target="_blank"><button style="width:100%; background-color:#000000; color:white; border:1px solid #333; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0px 4px 10px rgba(255,255,255,0.1);">🖤 發布到 Threads</button></a>', unsafe_allow_html=True)
         
     with share_col3:
         fb_url = f"https://www.facebook.com/sharer/sharer.php?u={encoded_url}"
-        st.markdown(f'<a href="{fb_url}" target="_blank"><button style="width:100%; background-color:#1877F2; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0px 4px 10px rgba(24,119,242,0.3);">🔵 分享主頁到 Facebook</button></a>', unsafe_allow_html=True)
+        st.markdown(f'<a href="{fb_url}" target="_blank"><button style="width:100%; background-color:#1877F2; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0px 4px 10px rgba(24,119,242,0.3);">🔵 分享到 FB</button></a>', unsafe_allow_html=True)
         
+    st.write("")
+    st.info("💡 **Instagram (IG) 分享小秘笈**：由於 IG 官方安全限制，建議直接手動螢幕截圖此畫面、或點擊右鍵另存圖片，即可發佈到你的 **IG 限時動態** 囉！也可以一鍵複製下方文字框直接發 Threads！")
     st.text_area(label="快速複製專用貼文框", value=share_text, height=140, label_visibility="collapsed")
 
     # ================= 8. 🔄 重新占卜功能 =================
