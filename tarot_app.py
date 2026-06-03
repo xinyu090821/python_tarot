@@ -300,11 +300,7 @@ if st.session_state.drawn_results:
         with st.spinner(f"✨ 正在由【{current_style}】為你深度解讀..."):
             try:
                 # 核心資安修正：從 Streamlit 雲端後台安全讀取金鑰，不把 Key 寫死在代碼中
-                try:
-                    MY_API_KEY = st.secrets["GEMINI_API_KEY"]
-                except:
-                    # 萬一本地測試沒設定，就先留空或用原本的
-                    MY_API_KEY = "AIzaSyBcuq0X1Cx-v6_l_NWvO9nGeSwJqIcVKjs"
+                MY_API_KEY = st.secrets["GEMINI_API_KEY"]
                 client = genai.Client(api_key=MY_API_KEY)
                 
                 prompt = f"""
