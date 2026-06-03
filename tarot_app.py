@@ -358,7 +358,6 @@ if st.session_state.drawn_results:
         st.markdown(f'<a href="{fb_url}" target="_blank"><button style="width:100%; background-color:#1877F2; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0px 4px 10px rgba(24,119,242,0.3);">🔵 分享到 FB</button></a>', unsafe_allow_html=True)
         
     st.write("")
-    st.info("💡 **Instagram (IG) 分享小秘笈**：由於 IG 官方安全限制，建議直接手動螢幕截圖此畫面、或點擊右鍵另存圖片，即可發佈到你的 **IG 限時動態** 囉！也可以一鍵複製下方文字框直接發 Threads！")
     st.text_area(label="快速複製專用貼文框", value=share_text, height=140, label_visibility="collapsed")
 
     # ================= 8. 🔄 重新占卜功能 =================
